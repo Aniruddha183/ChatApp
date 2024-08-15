@@ -1,8 +1,8 @@
 import type { NextApiResponse } from "next";
-import { authMiddleware, AuthenticatedRequest } from "../../middleware/auth";
-import dbConnect from "../../lib/mondodb";
-import Message from "../../models/Message";
-import User from "../../models/User";
+import { authMiddleware, AuthenticatedRequest } from "../middleware/auth";
+import dbConnect from "../lib/mondodb";
+import Message from "../models/Message";
+import User from "../models/User";
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
   if (req.method !== "POST") {

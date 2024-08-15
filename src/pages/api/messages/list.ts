@@ -1,7 +1,7 @@
 import type { NextApiResponse } from "next";
-import { authMiddleware, AuthenticatedRequest } from "../../middleware/auth";
-import dbConnect from "../../lib/mondodb";
-import Message from "../../models/Message";
+import { authMiddleware, AuthenticatedRequest } from "../middleware/auth";
+import dbConnect from "../lib/mondodb";
+import Message from "../models/Message";
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
   if (req.method !== "GET") {

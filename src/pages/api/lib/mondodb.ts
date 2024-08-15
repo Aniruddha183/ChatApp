@@ -11,7 +11,7 @@ declare global {
   var mongoose: MongooseCache; // this must be a `var` and not `let` or `const`
 }
 
-const MONGODB_URI: any = process.env.MONDODB_URI;
+const MONGODB_URI: any = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
   throw new Error(
