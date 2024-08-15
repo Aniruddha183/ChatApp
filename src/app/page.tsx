@@ -1,113 +1,189 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+interface Message {
+  _id: string;
+  sender: { username: string };
+  recipient: { username: string };
+  content: string;
+  timestamp: string;
+}
+
+interface User {
+  _id: string;
+  username: string;
+}
 
 export default function Home() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string>("");
+
+  const [token, setToken] = useState("");
+  const [name, setName] = useState<any>("");
+  const router = useRouter();
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const username = localStorage.getItem("username");
+
+    setName(username);
+    if (storedToken) {
+      setToken(storedToken);
+      fetchUsers(storedToken);
+      fetchMessages(storedToken);
+    } else {
+      router.push("/login");
+    }
+  }, []);
+
+  const fetchUsers = async (authToken: string) => {
+    const username = localStorage.getItem("username");
+    try {
+      const response = await axios.get("/api/users/list", {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      // Exclude the current logged-in user from the list
+      const filteredUsers = response.data.filter(
+        (user: User) => user.username !== username
+      );
+      setUsers(filteredUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  const fetchMessages = async (authToken: string) => {
+    try {
+      const response = await axios.get("/api/messages/list", {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      setMessages(response.data);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  };
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) {
+      alert("Please select a recipient");
+      return;
+    }
+    try {
+      await axios.post(
+        "/api/messages/send",
+        { recipientId: selectedUser, content: newMessage },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNewMessage("");
+      fetchMessages(token);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="flex flex-col h-screen bg-black text-white">
+      <header className="bg-neutral-900 p-4 flex items-center justify-between shadow-md">
+        <h1 className="text-2xl font-bold">Chat App</h1>
+        <div className="flex gap-2 items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="white"
+            viewBox="0 0 24 24"
+            width="24px"
+            height="24px"
           >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+          </svg>
+          <h2 className="text-xl">{name}</h2>
         </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      </header>
+      <main className="flex-grow flex overflow-hidden">
+        <aside className="w-64 bg-neutral-800 p-4 overflow-y-auto flex flex-col justify-between shadow-lg">
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Users</h2>
+            <ul>
+              {users.map((user) => (
+                <li
+                  key={user._id}
+                  className={`cursor-pointer p-2 rounded ${
+                    selectedUser === user._id
+                      ? "bg-blue-600"
+                      : "hover:bg-neutral-700"
+                  }`}
+                  onClick={() => setSelectedUser(user._id)}
+                >
+                  {user.username}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <Link href="/login">
+            <div className="flex gap-2 items-center cursor-pointer hover:text-blue-500 transition-colors duration-300">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="white"
+                viewBox="0 0 24 24"
+                width="24px"
+                height="24px"
+              >
+                <path d="M10 9v6h4v5h-9V4h9v5h-4zm7.071-3.071L15.657 8.343 18.314 11H8v2h10.314l-2.657 2.657 1.414 1.414 5.657-5.657-5.657-5.657z" />
+              </svg>
+              <span>Log Out</span>
+            </div>
+          </Link>
+        </aside>
+        <section className="flex-grow flex flex-col p-4">
+          <div className="flex-grow overflow-y-auto mb-4 space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message._id}
+                className={`flex ${
+                  message.sender.username === name
+                    ? "justify-end"
+                    : "justify-start"
+                }`}
+              >
+                <div
+                  className={`p-4 rounded-2xl max-w-xs ${
+                    message.sender.username === name
+                      ? "bg-blue-500 text-white"
+                      : "bg-neutral-700 text-gray-300"
+                  }`}
+                >
+                  <span className="font-bold">
+                    {message.sender.username !== name &&
+                      message.sender.username + ": "}
+                  </span>
+                  {message.content}
+                </div>
+              </div>
+            ))}
+          </div>
+          <form onSubmit={sendMessage} className="flex">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-grow bg-neutral-700 text-white p-4 rounded-l-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+              required
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-6 py-4 rounded-r-2xl hover:bg-blue-700 transition-colors duration-300"
+            >
+              Send
+            </button>
+          </form>
+        </section>
+      </main>
+    </div>
   );
 }
